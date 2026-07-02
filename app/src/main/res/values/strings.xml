@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">Pitchstone</string>
+
+    <string name="notification_channel_extraction_name">Extraction status</string>
+    <string name="notification_channel_extraction_description">Progress and results of transaction extraction requests</string>
+    <string name="notification_extraction_running_title">Extracting transaction…</string>
+    <string name="notification_extraction_running_text">The agent is processing your request. This can take a few minutes.</string>
+    <string name="notification_extraction_success_title">Extraction complete</string>
+    <string name="notification_extraction_success_text">Tap to review the extracted transaction.</string>
+    <string name="notification_extraction_failure_title">Extraction failed</string>
+
+    <string name="share_processing_started">Processing shared file in the background. You\'ll get a notification when it\'s done.</string>
+    <string name="share_extraction_already_running">An extraction is already running. Try again once it finishes.</string>
 </resources>
