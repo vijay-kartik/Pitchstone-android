@@ -7,11 +7,17 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.hilt.navigation.compose.hiltViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import space.pitchstone.android.presentation.ask.AskScreen
+import space.pitchstone.android.presentation.ask.AskViewModel
+import space.pitchstone.android.presentation.budgets.BudgetsScreen
+import space.pitchstone.android.presentation.budgets.BudgetsViewModel
+import space.pitchstone.android.presentation.capture.CaptureScreen
+import space.pitchstone.android.presentation.capture.CaptureViewModel
 import space.pitchstone.android.presentation.confirm.ConfirmScreen
 import space.pitchstone.android.presentation.confirm.ConfirmViewModel
 import space.pitchstone.android.presentation.detail.TransactionDetailScreen
@@ -20,6 +26,9 @@ import space.pitchstone.android.presentation.home.HomeScreen
 import space.pitchstone.android.presentation.home.HomeViewModel
 import space.pitchstone.android.presentation.list.TransactionListScreen
 import space.pitchstone.android.presentation.list.TransactionListViewModel
+import space.pitchstone.android.presentation.navigation.AskRoute
+import space.pitchstone.android.presentation.navigation.BudgetsRoute
+import space.pitchstone.android.presentation.navigation.CaptureRoute
 import space.pitchstone.android.presentation.navigation.ConfirmRoute
 import space.pitchstone.android.presentation.navigation.HomeRoute
 import space.pitchstone.android.presentation.navigation.SettingsRoute
@@ -51,58 +60,81 @@ fun PitchstoneAppNavigation() {
         startDestination = HomeRoute,
         modifier = Modifier.fillMaxSize()
     ) {
-        // Home Screen (Extraction input)
         composable<HomeRoute> {
-            val homeViewModel: HomeViewModel = hiltViewModel()
+            val vm: HomeViewModel = hiltViewModel()
             HomeScreen(
-                viewModel = homeViewModel,
+                viewModel = vm,
+                onNavigateToCapture = { navController.navigate(CaptureRoute) },
+                onNavigateToBudgets = { navController.navigate(BudgetsRoute) },
                 onNavigateToSettings = { navController.navigate(SettingsRoute) },
-                onNavigateToTransactions = { navController.navigate(TransactionListRoute) },
-                onExtractionSuccess = { replyText -> navController.navigate(ConfirmRoute(replyText)) }
+                onNavigateToDetail = { id -> navController.navigate(TransactionDetailRoute(id)) }
             )
         }
 
-        // Settings Screen
-        composable<SettingsRoute> {
-            val settingsViewModel: SettingsViewModel = hiltViewModel()
-            SettingsScreen(
-                viewModel = settingsViewModel,
-                onBackClick = { navController.popBackStack() }
-            )
-        }
-
-        // Confirm Screen
-        composable<ConfirmRoute> {
-            val confirmViewModel: ConfirmViewModel = hiltViewModel()
-            ConfirmScreen(
-                viewModel = confirmViewModel,
-                onBackClick = { navController.popBackStack() },
-                onSavedSuccess = {
-                    navController.navigate(TransactionListRoute) {
-                        popUpTo(HomeRoute) { saveState = true }
-                        launchSingleTop = true
+        composable<CaptureRoute> {
+            val vm: CaptureViewModel = hiltViewModel()
+            CaptureScreen(
+                viewModel = vm,
+                onBack = { navController.popBackStack() },
+                onExtractSuccess = { replyText ->
+                    navController.navigate(ConfirmRoute(replyText)) {
+                        popUpTo(CaptureRoute) { inclusive = true }
                     }
                 }
             )
         }
 
-        // Transactions List Screen
-        composable<TransactionListRoute> {
-            val listViewModel: TransactionListViewModel = hiltViewModel()
-            TransactionListScreen(
-                viewModel = listViewModel,
+        composable<AskRoute> {
+            val vm: AskViewModel = hiltViewModel()
+            AskScreen(
+                viewModel = vm,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<BudgetsRoute> {
+            val vm: BudgetsViewModel = hiltViewModel()
+            BudgetsScreen(
+                viewModel = vm,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<SettingsRoute> {
+            val vm: SettingsViewModel = hiltViewModel()
+            SettingsScreen(
+                viewModel = vm,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable<ConfirmRoute> {
+            val vm: ConfirmViewModel = hiltViewModel()
+            ConfirmScreen(
+                viewModel = vm,
                 onBackClick = { navController.popBackStack() },
-                onTransactionClick = { transactionId ->
-                    navController.navigate(TransactionDetailRoute(transactionId))
+                onSavedSuccess = {
+                    navController.navigate(HomeRoute) {
+                        popUpTo(HomeRoute) { inclusive = true }
+                    }
                 }
             )
         }
 
-        // Transaction Detail Screen
+        // Kept but unreachable from nav — compiles cleanly via TransactionListRoute
+        composable<TransactionListRoute> {
+            val vm: TransactionListViewModel = hiltViewModel()
+            TransactionListScreen(
+                viewModel = vm,
+                onBackClick = { navController.popBackStack() },
+                onTransactionClick = { id -> navController.navigate(TransactionDetailRoute(id)) }
+            )
+        }
+
         composable<TransactionDetailRoute> {
-            val detailViewModel: TransactionDetailViewModel = hiltViewModel()
+            val vm: TransactionDetailViewModel = hiltViewModel()
             TransactionDetailScreen(
-                viewModel = detailViewModel,
+                viewModel = vm,
                 onBackClick = { navController.popBackStack() }
             )
         }
