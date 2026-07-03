@@ -4,6 +4,13 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
@@ -47,11 +55,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import space.pitchstone.android.ui.components.AccentButton
-import space.pitchstone.android.ui.components.HairlineDivider
 import space.pitchstone.android.ui.components.OutlineButton
 import space.pitchstone.android.ui.components.ScreenHeader
 import space.pitchstone.android.ui.components.SectionLabel
-import space.pitchstone.android.ui.components.ThinkingDots
+import space.pitchstone.android.ui.theme.JetBrainsMono
 import space.pitchstone.android.ui.theme.PitchstoneColors
 import space.pitchstone.android.ui.theme.SpaceGrotesk
 
@@ -139,7 +146,8 @@ private fun InputContent(
         ScreenHeader(title = "Capture", onBack = onBack)
         Spacer(Modifier.height(24.dp))
 
-        SectionLabel("SCREENSHOTS")
+        val screenshotLabel = if (state.images.isEmpty()) "SCREENSHOTS" else "SCREENSHOTS · ${state.images.size} OF 10"
+        SectionLabel(screenshotLabel)
         Spacer(Modifier.height(10.dp))
 
         if (state.images.isEmpty()) {
@@ -180,14 +188,14 @@ private fun InputContent(
         HairlineDivider()
         Spacer(Modifier.height(20.dp))
 
-        SectionLabel("NOTE (OPTIONAL)")
+        SectionLabel("NOTE FOR THE AGENT")
         Spacer(Modifier.height(10.dp))
         BasicTextField(
             value = state.note,
             onValueChange = onNoteChanged,
             textStyle = TextStyle(
                 fontFamily = SpaceGrotesk,
-                fontSize = 15.sp,
+                fontSize = 14.5.sp,
                 color = PitchstoneColors.OnBackground
             ),
             cursorBrush = SolidColor(PitchstoneColors.Accent),
@@ -195,14 +203,15 @@ private fun InputContent(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, PitchstoneColors.Outline, RoundedCornerShape(10.dp))
+                        .background(Color(0xFF171B21), RoundedCornerShape(12.dp))
+                        .border(1.dp, PitchstoneColors.Outline, RoundedCornerShape(12.dp))
                         .padding(14.dp)
                 ) {
                     if (state.note.isEmpty()) {
                         Text(
-                            "e.g. This is from last night's dinner",
+                            "e.g. dining out",
                             color = PitchstoneColors.OnSurfaceVariant,
-                            fontSize = 15.sp
+                            fontSize = 14.5.sp
                         )
                     }
                     inner()
@@ -210,14 +219,21 @@ private fun InputContent(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(90.dp)
+                .height(80.dp)
         )
 
         Spacer(Modifier.height(20.dp))
 
         SectionLabel("MODE")
         Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF171B21), RoundedCornerShape(12.dp))
+                .border(1.dp, PitchstoneColors.Outline, RoundedCornerShape(12.dp))
+                .padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             ModeChip(
                 label = "Extract & save",
                 selected = state.extractAndSave,
@@ -303,25 +319,83 @@ private fun ModeChip(
 
 @Composable
 private fun ProcessingContent(steps: List<String>) {
+    val transition = rememberInfiniteTransition(label = "pulse")
+    val pulseProgress by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(1600, easing = LinearEasing), RepeatMode.Restart),
+        label = "pulseProgress"
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding()
-            .padding(horizontal = 20.dp),
-        verticalArrangement = Arrangement.Center
+            .statusBarsPadding(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        SectionLabel("AGENT WORKING")
-        Spacer(Modifier.height(24.dp))
-        steps.forEach { step ->
-            Text(
-                text = "→ $step",
-                color = PitchstoneColors.OnSurfaceVariant,
-                fontSize = 14.sp
-            )
-            Spacer(Modifier.height(6.dp))
+        // Pulsing dot
+        Box(
+            modifier = Modifier.size(100.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val centerX = size.width / 2
+                val centerY = size.height / 2
+                val baseRadius = 28.dp.toPx()
+                drawCircle(
+                    color = PitchstoneColors.Accent,
+                    radius = baseRadius * (1f + 0.79f * pulseProgress),
+                    center = Offset(centerX, centerY),
+                    alpha = 0.35f * (1f - pulseProgress)
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(PitchstoneColors.Accent.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clip(CircleShape)
+                        .background(PitchstoneColors.Accent)
+                )
+            }
         }
-        Spacer(Modifier.height(12.dp))
-        ThinkingDots()
+
+        Spacer(Modifier.height(28.dp))
+
+        // Step log
+        Column(
+            modifier = Modifier
+                .width(280.dp)
+                .padding(horizontal = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp)
+        ) {
+            steps.forEachIndexed { index, step ->
+                val isLast = index == steps.lastIndex
+                val prefix = if (isLast) "→" else "✓"
+                val color = if (isLast) PitchstoneColors.OnSurfaceVariant else PitchstoneColors.Accent
+                Text(
+                    text = "$prefix $step",
+                    fontFamily = JetBrainsMono,
+                    fontSize = 11.5.sp,
+                    color = color
+                )
+            }
+        }
+
+        Spacer(Modifier.height(28.dp))
+        Text(
+            text = "This can take a few minutes on the local model.\nSafe to leave — we'll keep running.",
+            fontSize = 12.sp,
+            color = PitchstoneColors.OnSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            lineHeight = 18.sp
+        )
     }
 }
 

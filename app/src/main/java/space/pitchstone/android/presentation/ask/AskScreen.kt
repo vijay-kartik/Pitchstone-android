@@ -77,7 +77,11 @@ fun AskScreen(
                 .padding(horizontal = 20.dp)
         ) {
             Spacer(Modifier.height(16.dp))
-            ScreenHeader(title = "Ask", onBack = onBack)
+            ScreenHeader(
+                title = "Ask the agent",
+                subtitle = "conversation only — nothing gets saved",
+                onBack = onBack
+            )
             Spacer(Modifier.height(8.dp))
             HairlineDivider()
         }
@@ -141,7 +145,7 @@ fun AskScreen(
                     ) {
                         if (inputText.isEmpty()) {
                             Text(
-                                "Ask about your finances…",
+                                "Ask anything…",
                                 color = PitchstoneColors.OnSurfaceVariant,
                                 fontSize = 15.sp
                             )

@@ -110,26 +110,32 @@ private fun DetailContent(transaction: Transaction, onBackClick: () -> Unit) {
 
         val statusColor = if (isSuccess) PitchstoneColors.Accent else PitchstoneColors.Danger
 
+        Text(
+            text = formatRupeesString(transaction.amount),
+            fontFamily = JetBrainsMono,
+            fontSize = 36.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = (-1).sp,
+            color = PitchstoneColors.OnBackground
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = buildString {
+                if (!transaction.recipient.isNullOrBlank()) append(transaction.recipient)
+                val dateStr = formatDateTimeLong(transaction.transactionDate)
+                if (dateStr.isNotBlank()) {
+                    if (isNotEmpty()) append(" · ")
+                    append(dateStr)
+                }
+            },
+            color = PitchstoneColors.OnSurfaceVariant,
+            fontSize = 13.sp
+        )
+        Spacer(Modifier.height(10.dp))
         MonoPill(
             text = transaction.status ?: "Unknown",
             color = statusColor
         )
-        Spacer(Modifier.height(12.dp))
-        Text(
-            text = formatRupeesString(transaction.amount),
-            fontFamily = JetBrainsMono,
-            fontSize = 42.sp,
-            fontWeight = FontWeight.Bold,
-            color = PitchstoneColors.OnBackground
-        )
-        if (!transaction.recipient.isNullOrBlank()) {
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = transaction.recipient,
-                color = PitchstoneColors.OnSurfaceVariant,
-                fontSize = 15.sp
-            )
-        }
 
         Spacer(Modifier.height(28.dp))
 

@@ -41,3 +41,11 @@ fun transactionMeta(transaction: Transaction): String {
     )
     return parts.joinToString(" · ")
 }
+
+fun currentMonthYearLabel(): String = try {
+    val now = java.time.LocalDate.now()
+    val month = now.month.getDisplayName(java.time.format.TextStyle.FULL, Locale.getDefault()).lowercase()
+    "$month ${now.year}"
+} catch (e: Exception) {
+    java.text.SimpleDateFormat("MMMM yyyy", Locale.getDefault()).format(java.util.Date()).lowercase()
+}

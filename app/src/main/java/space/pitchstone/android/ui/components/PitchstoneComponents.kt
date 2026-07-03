@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -108,27 +110,49 @@ fun StatusDot(
 @Composable
 fun PaceBar(
     ratio: Float,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    tickRatio: Float? = null
 ) {
     val color = when {
         ratio >= 1f -> PitchstoneColors.Danger
         ratio >= 0.75f -> PitchstoneColors.Warn
         else -> PitchstoneColors.Accent
     }
+    val barHeight = 5.dp
+    val containerHeight = if (tickRatio != null) 11.dp else barHeight
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(4.dp)
-            .clip(RoundedCornerShape(2.dp))
-            .background(PitchstoneColors.Outline)
+            .height(containerHeight),
+        contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth(ratio.coerceIn(0f, 1f))
-                .height(4.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(color)
-        )
+                .fillMaxWidth()
+                .height(barHeight)
+                .clip(RoundedCornerShape(100.dp))
+                .background(PitchstoneColors.Outline)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(ratio.coerceIn(0f, 1f))
+                    .height(barHeight)
+                    .clip(RoundedCornerShape(100.dp))
+                    .background(color)
+            )
+        }
+        if (tickRatio != null) {
+            Canvas(modifier = Modifier.fillMaxWidth().height(containerHeight)) {
+                val x = size.width * tickRatio.coerceIn(0f, 1f)
+                drawLine(
+                    color = Color.White.copy(alpha = 0.3f),
+                    start = Offset(x, 0f),
+                    end = Offset(x, size.height),
+                    strokeWidth = 1.5.dp.toPx()
+                )
+            }
+        }
     }
 }
 
@@ -188,10 +212,10 @@ fun MonoPill(
 ) {
     Box(
         modifier = modifier
-            .border(1.dp, color.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
-            .padding(horizontal = 8.dp, vertical = 3.dp)
+            .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(100.dp))
+            .padding(horizontal = 11.dp, vertical = 5.dp)
     ) {
-        MonoText(text = text, color = color, fontSize = 11.sp)
+        MonoText(text = text, color = color, fontSize = 10.sp)
     }
 }
 
@@ -220,6 +244,7 @@ fun ThinkingDots(modifier: Modifier = Modifier) {
 fun ScreenHeader(
     title: String,
     modifier: Modifier = Modifier,
+    subtitle: String? = null,
     onBack: (() -> Unit)? = null,
     trailingContent: @Composable (() -> Unit)? = null
 ) {
@@ -242,12 +267,21 @@ fun ScreenHeader(
             }
             Spacer(Modifier.width(12.dp))
         }
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            color = PitchstoneColors.OnBackground,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                color = PitchstoneColors.OnBackground
+            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    fontSize = 11.5.sp,
+                    color = PitchstoneColors.OnSurfaceVariant,
+                    modifier = Modifier.padding(top = 1.dp)
+                )
+            }
+        }
         trailingContent?.invoke()
     }
 }

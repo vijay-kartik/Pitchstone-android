@@ -1,6 +1,8 @@
 package space.pitchstone.android.presentation.budgets
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -39,12 +42,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import space.pitchstone.android.domain.model.BudgetCategory
+import space.pitchstone.android.presentation.util.currentMonthYearLabel
 import space.pitchstone.android.presentation.util.formatRupees
-import space.pitchstone.android.ui.components.AccentButton
 import space.pitchstone.android.ui.components.HairlineDivider
 import space.pitchstone.android.ui.components.PaceBar
 import space.pitchstone.android.ui.components.ScreenHeader
-import space.pitchstone.android.ui.components.SectionLabel
 import space.pitchstone.android.ui.theme.JetBrainsMono
 import space.pitchstone.android.ui.theme.PitchstoneColors
 import space.pitchstone.android.ui.theme.SpaceGrotesk
@@ -74,6 +76,7 @@ fun BudgetsScreen(
             }
 
             is BudgetsUiState.Ready -> {
+                val totalCap = state.categories.sumOf { it.monthlyCap }
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -82,11 +85,20 @@ fun BudgetsScreen(
                         .padding(horizontal = 20.dp)
                 ) {
                     Spacer(Modifier.height(16.dp))
-                    ScreenHeader(title = "Budgets", onBack = onBack)
-                    Spacer(Modifier.height(24.dp))
-
-                    SectionLabel("MONTHLY CAPS")
-                    Spacer(Modifier.height(16.dp))
+                    ScreenHeader(
+                        title = "Categories & budgets",
+                        subtitle = "caps reset on the 1st · ${currentMonthYearLabel()}",
+                        onBack = onBack,
+                        trailingContent = {
+                            Text(
+                                text = "${formatRupees(totalCap)} cap",
+                                fontFamily = JetBrainsMono,
+                                fontSize = 11.sp,
+                                color = PitchstoneColors.OnSurfaceVariant
+                            )
+                        }
+                    )
+                    Spacer(Modifier.height(8.dp))
 
                     state.categories.forEachIndexed { index, category ->
                         BudgetCategoryRow(
@@ -95,16 +107,40 @@ fun BudgetsScreen(
                             onIncrement = { viewModel.incrementCap(category) }
                         )
                         if (index < state.categories.lastIndex) {
-                            Spacer(Modifier.height(4.dp))
                             HairlineDivider()
-                            Spacer(Modifier.height(4.dp))
                         }
                     }
 
-                    Spacer(Modifier.height(28.dp))
-                    AccentButton(
-                        text = "+ New category",
-                        onClick = { showAddDialog = true }
+                    Spacer(Modifier.height(14.dp))
+
+                    // Dashed "+ New category" button
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(
+                                1.dp,
+                                PitchstoneColors.OnSurfaceVariant.copy(alpha = 0.25f),
+                                RoundedCornerShape(12.dp)
+                            )
+                            .clickable { showAddDialog = true }
+                            .padding(vertical = 13.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "+ New category",
+                            color = PitchstoneColors.OnSurfaceVariant,
+                            fontSize = 13.5.sp
+                        )
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "the agent tags each saved transaction with one of these — untagged spends land in \"everything else\".",
+                        fontFamily = JetBrainsMono,
+                        fontSize = 10.sp,
+                        color = PitchstoneColors.OnSurfaceVariant.copy(alpha = 0.5f),
+                        lineHeight = 16.sp
                     )
                     Spacer(Modifier.height(16.dp))
                     Spacer(Modifier.navigationBarsPadding())
@@ -130,7 +166,7 @@ private fun BudgetCategoryRow(
     onDecrement: () -> Unit,
     onIncrement: () -> Unit
 ) {
-    Column(modifier = Modifier.padding(vertical = 12.dp)) {
+    Column(modifier = Modifier.padding(vertical = 16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -139,44 +175,58 @@ private fun BudgetCategoryRow(
             Text(
                 text = category.name,
                 color = PitchstoneColors.OnBackground,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium
+                fontSize = 14.5.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f)
             )
+            Spacer(Modifier.width(12.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onDecrement, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        Icons.Default.Remove,
-                        contentDescription = "Decrease ₹500",
-                        tint = PitchstoneColors.OnSurfaceVariant,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-                Text(
-                    text = formatRupees(category.monthlyCap),
-                    color = PitchstoneColors.OnBackground,
-                    fontFamily = JetBrainsMono,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
+            // − button
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(9.dp))
+                    .border(1.dp, PitchstoneColors.Outline, RoundedCornerShape(9.dp))
+                    .clickable(onClick = onDecrement),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Remove,
+                    contentDescription = "Decrease ₹500",
+                    tint = PitchstoneColors.OnSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
                 )
-                IconButton(onClick = onIncrement, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Increase ₹500",
-                        tint = PitchstoneColors.Accent,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
+            }
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = formatRupees(category.monthlyCap),
+                color = PitchstoneColors.OnBackground,
+                fontFamily = JetBrainsMono,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.width(80.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+            Spacer(Modifier.width(6.dp))
+            // + button
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(9.dp))
+                    .border(1.dp, PitchstoneColors.Outline, RoundedCornerShape(9.dp))
+                    .clickable(onClick = onIncrement),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Increase ₹500",
+                    tint = PitchstoneColors.OnSurfaceVariant,
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(12.dp))
         PaceBar(ratio = 0f)
-        Spacer(Modifier.height(4.dp))
-        Text(
-            text = category.keywords.joinToString(", "),
-            color = PitchstoneColors.OnSurfaceVariant,
-            fontSize = 11.sp
-        )
     }
 }
 

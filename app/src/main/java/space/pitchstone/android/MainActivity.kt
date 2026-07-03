@@ -65,6 +65,7 @@ fun PitchstoneAppNavigation() {
             HomeScreen(
                 viewModel = vm,
                 onNavigateToCapture = { navController.navigate(CaptureRoute) },
+                onNavigateToAsk = { navController.navigate(AskRoute) },
                 onNavigateToBudgets = { navController.navigate(BudgetsRoute) },
                 onNavigateToSettings = { navController.navigate(SettingsRoute) },
                 onNavigateToDetail = { id -> navController.navigate(TransactionDetailRoute(id)) }
