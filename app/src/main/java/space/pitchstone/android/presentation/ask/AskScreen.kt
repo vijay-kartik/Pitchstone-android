@@ -121,7 +121,7 @@ fun AskScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(PitchstoneColors.Surface)
+                .background(PitchstoneColors.Background)
                 .padding(horizontal = 16.dp, vertical = 10.dp)
                 .navigationBarsPadding()
                 .imePadding(),
@@ -140,8 +140,9 @@ fun AskScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .border(1.dp, PitchstoneColors.Outline, RoundedCornerShape(20.dp))
-                            .padding(horizontal = 16.dp, vertical = 10.dp)
+                            .background(PitchstoneColors.InputField, RoundedCornerShape(100.dp))
+                            .border(1.dp, PitchstoneColors.Outline, RoundedCornerShape(100.dp))
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
                     ) {
                         if (inputText.isEmpty()) {
                             Text(

@@ -44,7 +44,7 @@ val Typography = Typography(
     titleLarge = TextStyle(
         fontFamily = SpaceGrotesk,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 18.sp,
+        fontSize = 17.sp,
         lineHeight = 24.sp,
         letterSpacing = 0.sp
     ),
@@ -72,8 +72,8 @@ val Typography = Typography(
     bodyMedium = TextStyle(
         fontFamily = SpaceGrotesk,
         fontWeight = FontWeight.Normal,
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
+        fontSize = 14.5.sp,
+        lineHeight = 21.sp,
         letterSpacing = 0.sp
     ),
     bodySmall = TextStyle(

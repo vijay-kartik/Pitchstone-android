@@ -52,7 +52,7 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text.uppercase(),
         style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.5.sp),
-        color = PitchstoneColors.OnSurfaceVariant,
+        color = PitchstoneColors.TextMuted,
         modifier = modifier
     )
 }
@@ -113,9 +113,10 @@ fun PaceBar(
     modifier: Modifier = Modifier,
     tickRatio: Float? = null
 ) {
+    // Doc rule: green <80% · amber ≥80% · red over cap
     val color = when {
-        ratio >= 1f -> PitchstoneColors.Danger
-        ratio >= 0.75f -> PitchstoneColors.Warn
+        ratio > 1f -> PitchstoneColors.Danger
+        ratio >= 0.8f -> PitchstoneColors.Warn
         else -> PitchstoneColors.Accent
     }
     val barHeight = 5.dp
@@ -222,22 +223,35 @@ fun MonoPill(
 @Composable
 fun ThinkingDots(modifier: Modifier = Modifier) {
     val transition = rememberInfiniteTransition(label = "thinking")
-    val offset by transition.animateFloat(
+    val phase by transition.animateFloat(
         initialValue = 0f,
         targetValue = 3f,
         animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = LinearEasing),
+            animation = tween(1050, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "dots"
     )
-    val dots = ".".repeat((offset.toInt() % 4))
-    Text(
-        text = "thinking$dots",
-        style = MaterialTheme.typography.bodySmall,
-        color = PitchstoneColors.OnSurfaceVariant,
+    val shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp)
+    Row(
         modifier = modifier
-    )
+            .clip(shape)
+            .background(PitchstoneColors.Surface)
+            .border(1.dp, Color.White.copy(alpha = 0.07f), shape)
+            .padding(horizontal = 18.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        repeat(3) { index ->
+            val active = phase.toInt() % 3 == index
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(PitchstoneColors.OnSurfaceVariant.copy(alpha = if (active) 1f else 0.35f))
+            )
+        }
+    }
 }
 
 @Composable
@@ -257,15 +271,14 @@ fun ScreenHeader(
         if (onBack != null) {
             Box(
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(44.dp)
                     .clip(CircleShape)
-                    .background(PitchstoneColors.SurfaceVariant)
                     .clickable(onClick = onBack),
                 contentAlignment = Alignment.Center
             ) {
-                Text("←", color = PitchstoneColors.OnBackground, fontSize = 18.sp)
+                Text("‹", color = PitchstoneColors.TextSecondary, fontSize = 24.sp)
             }
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(4.dp))
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -314,14 +327,14 @@ fun ChatBubbleUser(text: String, modifier: Modifier = Modifier) {
         Box(
             modifier = Modifier
                 .fillMaxWidth(0.82f)
-                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 4.dp, bottomStart = 16.dp, bottomEnd = 16.dp))
-                .background(PitchstoneColors.Accent)
+                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 4.dp))
+                .background(PitchstoneColors.SurfaceVariant)
                 .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyMedium,
-                color = PitchstoneColors.Background
+                color = PitchstoneColors.OnBackground
             )
         }
     }
@@ -330,12 +343,14 @@ fun ChatBubbleUser(text: String, modifier: Modifier = Modifier) {
 @Composable
 fun ChatBubbleAgent(text: String, modifier: Modifier = Modifier) {
     Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+        val shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 4.dp, bottomEnd = 16.dp)
         Box(
             modifier = Modifier
                 .fillMaxWidth(0.82f)
-                .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 16.dp))
-                .background(PitchstoneColors.SurfaceVariant)
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+                .clip(shape)
+                .background(PitchstoneColors.Surface)
+                .border(1.dp, Color.White.copy(alpha = 0.07f), shape)
+                .padding(horizontal = 14.dp, vertical = 12.dp)
         ) {
             Text(
                 text = text,

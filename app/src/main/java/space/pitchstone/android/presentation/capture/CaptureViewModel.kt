@@ -8,15 +8,19 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import space.pitchstone.android.domain.model.Attachment
 import space.pitchstone.android.domain.usecase.ExtractTransactionUseCase
 import space.pitchstone.android.presentation.util.ImageCompressor
 import javax.inject.Inject
+
+private const val IMAGE_PREP_TIMEOUT_MS = 30_000L
 
 @HiltViewModel
 class CaptureViewModel @Inject constructor(
@@ -54,28 +58,54 @@ class CaptureViewModel @Inject constructor(
         viewModelScope.launch {
             val steps = mutableListOf<String>()
 
-            fun addStep(step: String): List<String> {
+            fun addStep(step: String) {
                 steps.add(step)
                 _uiState.value = CaptureUiState.Processing(steps.toList())
-                return steps.toList()
             }
 
-            addStep("Preparing images…")
-            val attachments = withContext(Dispatchers.IO) {
-                current.images.mapNotNull { uri ->
-                    val bytes = ImageCompressor.compressUri(context, uri) ?: return@mapNotNull null
-                    val name = getFileName(uri) ?: "screenshot.jpg"
-                    val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
-                    Attachment(name, bytes, mimeType)
+            val attachments = if (current.images.isEmpty()) {
+                emptyList()
+            } else {
+                addStep("preparing ${current.images.size} screenshot${if (current.images.size == 1) "" else "s"}…")
+                val prepared = try {
+                    withTimeout(IMAGE_PREP_TIMEOUT_MS) {
+                        withContext(Dispatchers.IO) {
+                            current.images.mapNotNull { uri ->
+                                val bytes = ImageCompressor.compressUri(context, uri) ?: return@mapNotNull null
+                                val name = getFileName(uri) ?: "screenshot.jpg"
+                                val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
+                                Attachment(name, bytes, mimeType)
+                            }
+                        }
+                    }
+                } catch (e: TimeoutCancellationException) {
+                    _uiState.value = CaptureUiState.Error(
+                        message = "Reading the selected screenshots timed out — remove and re-add them, then retry.",
+                        previousInput = current
+                    )
+                    return@launch
                 }
+                if (prepared.isEmpty()) {
+                    _uiState.value = CaptureUiState.Error(
+                        message = "Couldn't read the selected screenshots — remove and re-add them, then retry.",
+                        previousInput = current
+                    )
+                    return@launch
+                }
+                prepared
             }
 
-            val prompt = buildPrompt(current.note, current.extractAndSave)
-            addStep("Sending to agent…")
+            val prompt = buildPrompt(current.note, current.extractAndSave, hasImages = attachments.isNotEmpty())
+            if (attachments.isEmpty()) {
+                addStep("sending your question…")
+            } else {
+                val totalKb = attachments.sumOf { it.bytes.size } / 1024
+                addStep("uploading $totalKb KB · agent is reading the image…")
+            }
 
             extractTransactionUseCase(prompt, attachments)
                 .onSuccess { replyText ->
-                    addStep("Agent replied.")
+                    addStep("reply received")
                     _uiState.value = CaptureUiState.Done(
                         replyText = replyText,
                         extractAndSave = current.extractAndSave
@@ -95,13 +125,27 @@ class CaptureViewModel @Inject constructor(
         _uiState.value = errorState.previousInput
     }
 
-    private fun buildPrompt(note: String, extractAndSave: Boolean): String {
-        val baseInstruction = if (extractAndSave) {
-            "Extract the transaction details from the attached screenshot and return them as structured JSON — include fields like amount, currency, date/time, sender, recipient, transaction/reference ID, and status if visible. If a field isn't visible, omit it rather than guessing."
-        } else {
-            "Analyse the attached screenshot and answer the user's question."
+    // The instruction must match what is actually attached: referencing a screenshot
+    // that isn't there sends the agent hunting for a missing image and stalls the run.
+    private fun buildPrompt(note: String, extractAndSave: Boolean, hasImages: Boolean): String {
+        val baseInstruction = when {
+            extractAndSave && hasImages ->
+                "Extract the transaction details from the attached screenshot(s) and return them as structured JSON — include fields like amount, currency, date/time, sender, recipient, transaction/reference ID, and status if visible. If a field isn't visible, omit it rather than guessing."
+
+            extractAndSave ->
+                "Extract the transaction details from the note above and return them as structured JSON — include fields like amount, currency, date/time, sender, recipient, transaction/reference ID, and status if mentioned. If a field isn't mentioned, omit it rather than guessing."
+
+            hasImages ->
+                "Analyse the attached screenshot(s) and answer the user's question."
+
+            // Just-ask with no images: the note IS the question — send it verbatim.
+            else -> ""
         }
-        return if (note.isBlank()) baseInstruction else "$note\n\n$baseInstruction"
+        return when {
+            note.isBlank() -> baseInstruction
+            baseInstruction.isBlank() -> note
+            else -> "$note\n\n$baseInstruction"
+        }
     }
 
     private fun getFileName(uri: Uri): String? = try {

@@ -1,5 +1,6 @@
 package space.pitchstone.android.presentation.home
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -28,10 +29,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import space.pitchstone.android.R
 import space.pitchstone.android.domain.model.CategorySpend
 import space.pitchstone.android.domain.model.LedgerSummary
 import space.pitchstone.android.presentation.util.formatRupees
@@ -146,11 +150,11 @@ private fun LedgerContent(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Pitchstone",
-                color = PitchstoneColors.OnBackground,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold
+            Image(
+                painter = painterResource(R.drawable.pitchstone_wordmark),
+                contentDescription = "Pitchstone",
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.height(17.dp)
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 MonoChip(label = "ASK", onClick = onNavigateToAsk)
@@ -279,7 +283,7 @@ private fun BudgetPaceRow(categorySpend: CategorySpend, tickRatio: Float) {
         ) {
             Text(
                 text = categorySpend.category.name,
-                color = PitchstoneColors.OnSurfaceVariant,
+                color = PitchstoneColors.TextSecondary,
                 fontSize = 12.5.sp
             )
             Text(

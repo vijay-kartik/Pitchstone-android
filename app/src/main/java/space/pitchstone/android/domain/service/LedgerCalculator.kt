@@ -29,8 +29,6 @@ class LedgerCalculator @Inject constructor(
             }
         }
 
-        val totalCap = categories.sumOf { it.monthlyCap }.coerceAtLeast(1)
-
         val categorySpends = categories.map { category ->
             val spent = currentMonthTxns
                 .filter { txn -> categorizer.categorize(txn, listOf(category)) != null }
@@ -47,10 +45,14 @@ class LedgerCalculator @Inject constructor(
 
         val monthSpent = currentMonthTxns.sumOf { AmountParser.parse(it.amount) }
 
+        // Fraction of the calendar month elapsed — drives the pace tick so a
+        // spend bar sitting past the tick reads as "burning faster than time".
+        val monthProgressFraction = now.dayOfMonth.toFloat() / now.lengthOfMonth()
+
         return LedgerSummary(
             monthLabel = monthLabel,
             monthSpent = monthSpent,
-            monthProgressFraction = (monthSpent.toFloat() / totalCap).coerceIn(0f, 1f),
+            monthProgressFraction = monthProgressFraction.coerceIn(0f, 1f),
             categories = categorySpends,
             recentTransactions = transactions.take(5)
         )

@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import space.pitchstone.android.ui.components.AccentButton
+import space.pitchstone.android.ui.components.HairlineDivider
 import space.pitchstone.android.ui.components.OutlineButton
 import space.pitchstone.android.ui.components.ScreenHeader
 import space.pitchstone.android.ui.components.SectionLabel
@@ -203,7 +204,7 @@ private fun InputContent(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFF171B21), RoundedCornerShape(12.dp))
+                        .background(PitchstoneColors.InputField, RoundedCornerShape(12.dp))
                         .border(1.dp, PitchstoneColors.Outline, RoundedCornerShape(12.dp))
                         .padding(14.dp)
                 ) {
@@ -229,7 +230,7 @@ private fun InputContent(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF171B21), RoundedCornerShape(12.dp))
+                .background(PitchstoneColors.InputField, RoundedCornerShape(12.dp))
                 .border(1.dp, PitchstoneColors.Outline, RoundedCornerShape(12.dp))
                 .padding(4.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp)

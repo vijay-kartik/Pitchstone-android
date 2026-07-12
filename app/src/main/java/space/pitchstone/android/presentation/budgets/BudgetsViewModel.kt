@@ -3,13 +3,15 @@ package space.pitchstone.android.presentation.budgets
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import space.pitchstone.android.domain.model.BudgetCategory
+import space.pitchstone.android.domain.model.CategorySpend
 import space.pitchstone.android.domain.usecase.AddCategoryUseCase
+import space.pitchstone.android.domain.usecase.BuildLedgerSummaryUseCase
+import space.pitchstone.android.domain.usecase.GetTransactionsUseCase
 import space.pitchstone.android.domain.usecase.ObserveCategoriesUseCase
 import space.pitchstone.android.domain.usecase.UpdateCategoryCapUseCase
 import javax.inject.Inject
@@ -18,14 +20,32 @@ private const val CAP_STEP = 500
 
 @HiltViewModel
 class BudgetsViewModel @Inject constructor(
-    observeCategoriesUseCase: ObserveCategoriesUseCase,
+    private val getTransactionsUseCase: GetTransactionsUseCase,
+    private val observeCategoriesUseCase: ObserveCategoriesUseCase,
+    private val buildLedgerSummaryUseCase: BuildLedgerSummaryUseCase,
     private val updateCategoryCapUseCase: UpdateCategoryCapUseCase,
     private val addCategoryUseCase: AddCategoryUseCase
 ) : ViewModel() {
 
-    val uiState: StateFlow<BudgetsUiState> = observeCategoriesUseCase()
-        .map { BudgetsUiState.Ready(it) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BudgetsUiState.Loading)
+    private val _uiState = MutableStateFlow<BudgetsUiState>(BudgetsUiState.Loading)
+    val uiState: StateFlow<BudgetsUiState> = _uiState.asStateFlow()
+
+    init {
+        load()
+    }
+
+    private fun load() {
+        viewModelScope.launch {
+            val transactions = getTransactionsUseCase().getOrElse { emptyList() }
+            observeCategoriesUseCase().collect { categories ->
+                val summary = buildLedgerSummaryUseCase(transactions, categories)
+                _uiState.value = BudgetsUiState.Ready(
+                    categories = summary.categories,
+                    monthProgressFraction = summary.monthProgressFraction
+                )
+            }
+        }
+    }
 
     fun incrementCap(category: BudgetCategory) {
         viewModelScope.launch {
@@ -34,7 +54,7 @@ class BudgetsViewModel @Inject constructor(
     }
 
     fun decrementCap(category: BudgetCategory) {
-        val newCap = (category.monthlyCap - CAP_STEP).coerceAtLeast(0)
+        val newCap = (category.monthlyCap - CAP_STEP).coerceAtLeast(CAP_STEP)
         viewModelScope.launch {
             updateCategoryCapUseCase(category.name, newCap)
         }
@@ -50,5 +70,8 @@ class BudgetsViewModel @Inject constructor(
 
 sealed interface BudgetsUiState {
     object Loading : BudgetsUiState
-    data class Ready(val categories: List<BudgetCategory>) : BudgetsUiState
+    data class Ready(
+        val categories: List<CategorySpend>,
+        val monthProgressFraction: Float
+    ) : BudgetsUiState
 }

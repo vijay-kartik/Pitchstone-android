@@ -37,11 +37,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import space.pitchstone.android.domain.model.BudgetCategory
+import space.pitchstone.android.domain.model.CategorySpend
 import space.pitchstone.android.presentation.util.currentMonthYearLabel
 import space.pitchstone.android.presentation.util.formatRupees
 import space.pitchstone.android.ui.components.HairlineDivider
@@ -50,9 +52,6 @@ import space.pitchstone.android.ui.components.ScreenHeader
 import space.pitchstone.android.ui.theme.JetBrainsMono
 import space.pitchstone.android.ui.theme.PitchstoneColors
 import space.pitchstone.android.ui.theme.SpaceGrotesk
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Remove
 
 @Composable
 fun BudgetsScreen(
@@ -76,7 +75,7 @@ fun BudgetsScreen(
             }
 
             is BudgetsUiState.Ready -> {
-                val totalCap = state.categories.sumOf { it.monthlyCap }
+                val totalCap = state.categories.sumOf { it.category.monthlyCap }
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -100,11 +99,12 @@ fun BudgetsScreen(
                     )
                     Spacer(Modifier.height(8.dp))
 
-                    state.categories.forEachIndexed { index, category ->
+                    state.categories.forEachIndexed { index, categorySpend ->
                         BudgetCategoryRow(
-                            category = category,
-                            onDecrement = { viewModel.decrementCap(category) },
-                            onIncrement = { viewModel.incrementCap(category) }
+                            categorySpend = categorySpend,
+                            tickRatio = state.monthProgressFraction,
+                            onDecrement = { viewModel.decrementCap(categorySpend.category) },
+                            onIncrement = { viewModel.incrementCap(categorySpend.category) }
                         )
                         if (index < state.categories.lastIndex) {
                             HairlineDivider()
@@ -162,41 +162,39 @@ fun BudgetsScreen(
 
 @Composable
 private fun BudgetCategoryRow(
-    category: BudgetCategory,
+    categorySpend: CategorySpend,
+    tickRatio: Float,
     onDecrement: () -> Unit,
     onIncrement: () -> Unit
 ) {
+    val category = categorySpend.category
+    val usedPct = if (category.monthlyCap > 0) {
+        (categorySpend.spent * 100) / category.monthlyCap
+    } else 0
     Column(modifier = Modifier.padding(vertical = 16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = category.name,
-                color = PitchstoneColors.OnBackground,
-                fontSize = 14.5.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.weight(1f)
-            )
-            Spacer(Modifier.width(12.dp))
-
-            // − button
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(9.dp))
-                    .border(1.dp, PitchstoneColors.Outline, RoundedCornerShape(9.dp))
-                    .clickable(onClick = onDecrement),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Remove,
-                    contentDescription = "Decrease ₹500",
-                    tint = PitchstoneColors.OnSurfaceVariant,
-                    modifier = Modifier.size(16.dp)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = category.name,
+                    color = PitchstoneColors.OnBackground,
+                    fontSize = 14.5.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = "${formatRupees(categorySpend.spent)} spent · $usedPct% used",
+                    fontFamily = JetBrainsMono,
+                    fontSize = 10.sp,
+                    color = if (categorySpend.isOver) PitchstoneColors.Danger else PitchstoneColors.TextMuted
                 )
             }
+            Spacer(Modifier.width(12.dp))
+
+            CapStepperButton(glyph = "−", contentDescription = "Decrease ₹500", onClick = onDecrement)
             Spacer(Modifier.width(6.dp))
             Text(
                 text = formatRupees(category.monthlyCap),
@@ -208,25 +206,33 @@ private fun BudgetCategoryRow(
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
             Spacer(Modifier.width(6.dp))
-            // + button
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(RoundedCornerShape(9.dp))
-                    .border(1.dp, PitchstoneColors.Outline, RoundedCornerShape(9.dp))
-                    .clickable(onClick = onIncrement),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = "Increase ₹500",
-                    tint = PitchstoneColors.OnSurfaceVariant,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
+            CapStepperButton(glyph = "+", contentDescription = "Increase ₹500", onClick = onIncrement)
         }
         Spacer(Modifier.height(12.dp))
-        PaceBar(ratio = 0f)
+        PaceBar(ratio = categorySpend.ratio, tickRatio = tickRatio)
+    }
+}
+
+@Composable
+private fun CapStepperButton(
+    glyph: String,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(34.dp)
+            .clip(RoundedCornerShape(9.dp))
+            .border(1.dp, PitchstoneColors.Outline, RoundedCornerShape(9.dp))
+            .clickable(onClick = onClick)
+            .semantics { this.contentDescription = contentDescription },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = glyph,
+            color = PitchstoneColors.TextSecondary,
+            fontSize = 16.sp
+        )
     }
 }
 
