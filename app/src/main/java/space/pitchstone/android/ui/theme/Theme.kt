@@ -1,51 +1,59 @@
 package space.pitchstone.android.ui.theme
 
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
+import android.app.Activity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFFBB86FC),
-    onPrimary = Color.Black,
-    secondary = Color(0xFF03DAC6),
-    onSecondary = Color.Black,
-    error = Color(0xFFCF6679),
-    onError = Color.Black
-)
-
-private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF6200EE),
-    onPrimary = Color.White,
-    secondary = Color(0xFF03DAC6),
-    onSecondary = Color.Black,
-    error = Color(0xFFB00020),
-    onError = Color.White
+private val PitchstoneDarkColorScheme = darkColorScheme(
+    primary = PitchstoneColors.Accent,
+    onPrimary = PitchstoneColors.Background,
+    primaryContainer = Color(0xFF1A3D2E),
+    onPrimaryContainer = PitchstoneColors.Accent,
+    secondary = PitchstoneColors.Warn,
+    onSecondary = PitchstoneColors.Background,
+    secondaryContainer = Color(0xFF3D3218),
+    onSecondaryContainer = PitchstoneColors.Warn,
+    background = PitchstoneColors.Background,
+    onBackground = PitchstoneColors.OnBackground,
+    surface = PitchstoneColors.Surface,
+    onSurface = PitchstoneColors.OnSurface,
+    surfaceVariant = PitchstoneColors.SurfaceVariant,
+    onSurfaceVariant = PitchstoneColors.OnSurfaceVariant,
+    outline = PitchstoneColors.Outline,
+    error = PitchstoneColors.Danger,
+    onError = PitchstoneColors.Background,
+    errorContainer = Color(0xFF3D1B16),
+    onErrorContainer = PitchstoneColors.Danger,
+    inverseSurface = PitchstoneColors.OnBackground,
+    inverseOnSurface = PitchstoneColors.Background,
+    inversePrimary = Color(0xFF1A3D2E),
+    scrim = Color(0xCC000000),
 )
 
 @Composable
-fun PitchstoneTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
-) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+fun PitchstoneTheme(content: @Composable () -> Unit) {
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            val backgroundArgb = PitchstoneColors.Background.toArgb()
+            window.statusBarColor = backgroundArgb
+            window.navigationBarColor = backgroundArgb
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = false
+                isAppearanceLightNavigationBars = false
+            }
         }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
     }
 
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = PitchstoneDarkColorScheme,
         typography = Typography,
         content = content
     )

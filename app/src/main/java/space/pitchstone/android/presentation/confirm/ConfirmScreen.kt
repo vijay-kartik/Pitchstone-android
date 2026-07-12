@@ -1,8 +1,7 @@
 package space.pitchstone.android.presentation.confirm
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,31 +10,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -45,12 +30,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import space.pitchstone.android.ui.theme.ErrorRed
-import space.pitchstone.android.ui.theme.InfoBlue
+import androidx.compose.ui.unit.sp
+import space.pitchstone.android.ui.components.AccentButton
+import space.pitchstone.android.ui.components.HairlineDivider
+import space.pitchstone.android.ui.components.OutlineButton
+import space.pitchstone.android.ui.components.ScreenHeader
+import space.pitchstone.android.ui.components.SectionLabel
+import space.pitchstone.android.ui.theme.JetBrainsMono
+import space.pitchstone.android.ui.theme.PitchstoneColors
+import space.pitchstone.android.ui.theme.SpaceGrotesk
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfirmScreen(
     viewModel: ConfirmViewModel,
@@ -61,113 +54,100 @@ fun ConfirmScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(uiState) {
-        if (uiState is ConfirmUiState.Saved) {
-            onSavedSuccess()
-        }
+        if (uiState is ConfirmUiState.Saved) onSavedSuccess()
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        when (uiState) {
-                            is ConfirmUiState.RawText -> "Agent Response"
-                            else -> "Confirm Transaction"
-                        }
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        },
+    Box(
         modifier = modifier
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            when (val state = uiState) {
-                is ConfirmUiState.Loading -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                }
-                is ConfirmUiState.RawText -> {
-                    RawTextContent(text = state.text, onClose = onBackClick, modifier = Modifier.fillMaxSize().padding(16.dp))
-                }
-                is ConfirmUiState.Extracted -> {
-                    ExtractedFormContent(initialFields = state.fields, onSave = { viewModel.saveTransaction(it) }, errorMessage = null, isSaving = false, modifier = Modifier.fillMaxSize().padding(16.dp))
-                }
-                is ConfirmUiState.Saving -> {
-                    ExtractedFormContent(initialFields = state.fields, onSave = {}, errorMessage = null, isSaving = true, modifier = Modifier.fillMaxSize().padding(16.dp))
-                }
-                is ConfirmUiState.SaveError -> {
-                    ExtractedFormContent(initialFields = state.fields, onSave = { viewModel.saveTransaction(it) }, errorMessage = state.message, isSaving = false, modifier = Modifier.fillMaxSize().padding(16.dp))
-                }
-                else -> {}
-            }
-        }
-    }
-}
-
-@Composable
-fun RawTextContent(text: String, onClose: () -> Unit, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .fillMaxSize()
+            .background(PitchstoneColors.Background)
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = InfoBlue.copy(alpha = 0.12f))
-        ) {
-            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Info, contentDescription = null, tint = InfoBlue)
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    text = "The agent returned text instead of structured transaction data.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
+        when (val state = uiState) {
+            is ConfirmUiState.Loading -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = PitchstoneColors.Accent)
+                }
+            }
+
+            is ConfirmUiState.RawText -> {
+                RawTextContent(
+                    text = state.text,
+                    onClose = onBackClick
                 )
             }
-        }
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            SelectionContainer {
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(20.dp),
-                    color = MaterialTheme.colorScheme.onSurface
+            is ConfirmUiState.Extracted -> {
+                ExtractedFormContent(
+                    initialFields = state.fields,
+                    onSave = { viewModel.saveTransaction(it) },
+                    errorMessage = null,
+                    isSaving = false,
+                    onBackClick = onBackClick
                 )
             }
-        }
 
-        OutlinedButton(
-            onClick = onClose,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Text("Done")
+            is ConfirmUiState.Saving -> {
+                ExtractedFormContent(
+                    initialFields = state.fields,
+                    onSave = {},
+                    errorMessage = null,
+                    isSaving = true,
+                    onBackClick = onBackClick
+                )
+            }
+
+            is ConfirmUiState.SaveError -> {
+                ExtractedFormContent(
+                    initialFields = state.fields,
+                    onSave = { viewModel.saveTransaction(it) },
+                    errorMessage = state.message,
+                    isSaving = false,
+                    onBackClick = onBackClick
+                )
+            }
+
+            else -> {}
         }
     }
 }
 
 @Composable
-fun ExtractedFormContent(
+private fun RawTextContent(text: String, onClose: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .statusBarsPadding()
+            .padding(horizontal = 20.dp)
+    ) {
+        Spacer(Modifier.height(16.dp))
+        ScreenHeader(title = "Agent Reply", onBack = onClose)
+        Spacer(Modifier.height(24.dp))
+
+        SelectionContainer {
+            Text(
+                text = text,
+                fontFamily = JetBrainsMono,
+                fontSize = 13.sp,
+                color = PitchstoneColors.OnSurfaceVariant,
+                lineHeight = 20.sp
+            )
+        }
+
+        Spacer(Modifier.height(28.dp))
+        OutlineButton(text = "Done", onClick = onClose)
+        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.navigationBarsPadding())
+    }
+}
+
+@Composable
+private fun ExtractedFormContent(
     initialFields: ExtractedFields,
     onSave: (ExtractedFields) -> Unit,
     errorMessage: String?,
     isSaving: Boolean,
-    modifier: Modifier = Modifier
+    onBackClick: () -> Unit
 ) {
     var amount by remember { mutableStateOf(initialFields.amount) }
     var currency by remember { mutableStateOf(initialFields.currency) }
@@ -178,70 +158,127 @@ fun ExtractedFormContent(
     var status by remember { mutableStateOf(initialFields.status) }
 
     Column(
-        modifier = modifier.verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .statusBarsPadding()
+            .padding(horizontal = 20.dp)
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Text(
-                    text = "Review extracted details",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
+        Spacer(Modifier.height(16.dp))
+        ScreenHeader(
+            title = "Review before saving",
+            subtitle = "AI can misread — tap any field to fix it",
+            onBack = onBackClick
+        )
+        Spacer(Modifier.height(16.dp))
 
-                OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text("Amount") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = currency, onValueChange = { currency = it }, label = { Text("Currency") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = dateTime, onValueChange = { dateTime = it }, label = { Text("Date & Time") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = sender, onValueChange = { sender = it }, label = { Text("Sender") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = recipient, onValueChange = { recipient = it }, label = { Text("Recipient") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = transactionId, onValueChange = { transactionId = it }, label = { Text("Transaction/Reference ID") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = status, onValueChange = { status = it }, label = { Text("Status") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = amount,
+                fontFamily = JetBrainsMono,
+                fontSize = 36.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = (-1).sp,
+                color = PitchstoneColors.OnBackground
+            )
+            Text(
+                text = recipient,
+                color = PitchstoneColors.OnSurfaceVariant,
+                fontSize = 16.sp
+            )
         }
 
-        // Error
-        AnimatedVisibility(visible = errorMessage != null, enter = fadeIn(), exit = fadeOut()) {
-            if (errorMessage != null) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = ErrorRed.copy(alpha = 0.12f))
-                ) {
-                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Warning, contentDescription = null, tint = ErrorRed)
-                        Spacer(Modifier.width(12.dp))
-                        Text(text = errorMessage, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
-                    }
-                }
-            }
+        Spacer(Modifier.height(20.dp))
+
+        ConfirmFieldRow("Amount", amount) { amount = it }
+        HairlineDivider()
+        ConfirmFieldRow("Currency", currency) { currency = it }
+        HairlineDivider()
+        ConfirmFieldRow("Date & Time", dateTime) { dateTime = it }
+        HairlineDivider()
+        ConfirmFieldRow("Sender", sender) { sender = it }
+        HairlineDivider()
+        ConfirmFieldRow("Recipient", recipient) { recipient = it }
+        HairlineDivider()
+        ConfirmFieldRow("Transaction ID", transactionId) { transactionId = it }
+        HairlineDivider()
+        ConfirmFieldRow("Status", status) { status = it }
+
+        if (initialFields.rawMap.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "raw_json attached",
+                fontFamily = JetBrainsMono,
+                fontSize = 10.sp,
+                color = PitchstoneColors.OnSurfaceVariant.copy(alpha = 0.45f)
+            )
         }
 
-        // Save Button
-        Button(
-            onClick = {
-                onSave(ExtractedFields(amount = amount, currency = currency, dateTime = dateTime, sender = sender, recipient = recipient, transactionId = transactionId, status = status, rawMap = initialFields.rawMap))
-            },
-            enabled = !isSaving,
+        if (errorMessage != null) {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = errorMessage,
+                color = PitchstoneColors.Danger,
+                fontSize = 13.sp
+            )
+        }
+
+        Spacer(Modifier.height(24.dp))
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            if (isSaving) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
-            } else {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Check, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Save to Database", fontWeight = FontWeight.Bold)
-                }
-            }
+            OutlineButton(
+                text = "Discard",
+                onClick = onBackClick,
+                modifier = Modifier.weight(1f),
+                enabled = !isSaving
+            )
+            AccentButton(
+                text = if (isSaving) "Saving…" else "Save transaction",
+                onClick = {
+                    onSave(
+                        ExtractedFields(
+                            amount = amount,
+                            currency = currency,
+                            dateTime = dateTime,
+                            sender = sender,
+                            recipient = recipient,
+                            transactionId = transactionId,
+                            status = status,
+                            rawMap = initialFields.rawMap
+                        )
+                    )
+                },
+                modifier = Modifier.weight(1.6f),
+                enabled = !isSaving
+            )
         }
         Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.navigationBarsPadding())
+    }
+}
+
+@Composable
+private fun ConfirmFieldRow(label: String, value: String, onValueChange: (String) -> Unit) {
+    Column(modifier = Modifier.padding(vertical = 10.dp)) {
+        SectionLabel(label)
+        Spacer(Modifier.height(6.dp))
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            textStyle = TextStyle(
+                fontFamily = SpaceGrotesk,
+                fontSize = 15.sp,
+                color = PitchstoneColors.OnBackground
+            ),
+            cursorBrush = SolidColor(PitchstoneColors.Accent),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
