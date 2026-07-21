@@ -1,18 +1,9 @@
-import java.io.FileInputStream
-import java.util.Properties
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
-}
-
-val localProperties = Properties()
-val localPropsFile = rootProject.file("local.properties")
-if (localPropsFile.exists()) {
-    localProperties.load(FileInputStream(localPropsFile))
 }
 
 android {
@@ -31,12 +22,6 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        buildConfigField(
-            "String",
-            "GATEWAY_API_KEY",
-            "\"${localProperties.getProperty("GATEWAY_API_KEY", "")}\""
-        )
     }
 
     buildTypes {
