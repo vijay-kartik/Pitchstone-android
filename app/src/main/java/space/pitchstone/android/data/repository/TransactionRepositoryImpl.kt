@@ -1,18 +1,13 @@
 package space.pitchstone.android.data.repository
 
 import android.util.Base64
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.HttpException
-import space.pitchstone.android.data.api.GatewayApi
 import space.pitchstone.android.data.api.OpenAiApi
 import space.pitchstone.android.data.model.OpenAiChatRequest
 import space.pitchstone.android.data.model.OpenAiContentPart
 import space.pitchstone.android.data.model.OpenAiImageUrl
 import space.pitchstone.android.data.model.OpenAiMessage
 import space.pitchstone.android.data.storage.GatewayPreferences
-import space.pitchstone.android.domain.model.AgentProvider
 import space.pitchstone.android.domain.model.Attachment
 import space.pitchstone.android.domain.model.GatewayException
 import space.pitchstone.android.domain.model.Transaction
@@ -26,62 +21,23 @@ private const val DEFAULT_OPENAI_MODEL = "gpt-5.4-mini"
 
 @Singleton
 class TransactionRepositoryImpl @Inject constructor(
-    private val api: GatewayApi,
     private val openAiApi: OpenAiApi,
     private val preferences: GatewayPreferences
 ) : TransactionRepository {
 
-    override suspend fun getTransactions(limit: Int): Result<List<Transaction>> {
-        return try {
-            val response = api.getTransactions(limit)
-            Result.success(response.map { it.toDomain() })
-        } catch (e: Exception) {
-            Result.failure(mapToGatewayException(e))
-        }
-    }
+    // Transaction persistence is served by a backend that is not yet wired up
+    // (the previous gateway was removed). These operations fail explicitly until
+    // the replacement backend is integrated, rather than silently returning empty data.
+    override suspend fun getTransactions(limit: Int): Result<List<Transaction>> =
+        Result.failure(noBackendConfigured())
 
-    override suspend fun getTransactionById(id: String): Result<Transaction> {
-        return try {
-            val response = api.getTransactionById(id)
-            Result.success(response.toDomain())
-        } catch (e: Exception) {
-            Result.failure(mapToGatewayException(e))
-        }
-    }
+    override suspend fun getTransactionById(id: String): Result<Transaction> =
+        Result.failure(noBackendConfigured())
 
-    override suspend fun saveTransaction(rawJson: Map<String, Any?>): Result<Transaction> {
-        return try {
-            val response = api.saveTransaction(rawJson)
-            Result.success(response.toDomain())
-        } catch (e: Exception) {
-            Result.failure(mapToGatewayException(e))
-        }
-    }
+    override suspend fun saveTransaction(rawJson: Map<String, Any?>): Result<Transaction> =
+        Result.failure(noBackendConfigured())
 
     override suspend fun extractTransaction(text: String?, attachments: List<Attachment>): Result<String> {
-        return when (preferences.getProviderSync()) {
-            AgentProvider.GATEWAY -> extractViaGateway(text, attachments)
-            AgentProvider.OPENAI -> extractViaOpenAi(text, attachments)
-        }
-    }
-
-    private suspend fun extractViaGateway(text: String?, attachments: List<Attachment>): Result<String> {
-        return try {
-            val textBody = text?.toRequestBody("text/plain".toMediaTypeOrNull())
-
-            val filesParts = attachments.map { attachment ->
-                val requestBody = attachment.bytes.toRequestBody(attachment.mimeType.toMediaTypeOrNull())
-                MultipartBody.Part.createFormData("files", attachment.name, requestBody)
-            }
-
-            val response = api.extractTransaction(textBody, filesParts)
-            Result.success(response.reply)
-        } catch (e: Exception) {
-            Result.failure(mapToGatewayException(e))
-        }
-    }
-
-    private suspend fun extractViaOpenAi(text: String?, attachments: List<Attachment>): Result<String> {
         val apiKey = preferences.getOpenAiApiKeySync()
         if (apiKey.isBlank()) {
             return Result.failure(GatewayException.Unauthorized())
@@ -123,14 +79,8 @@ class TransactionRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun pingGateway(): Result<Boolean> {
-        return try {
-            val response = api.getHealth()
-            Result.success(response.status == "ok")
-        } catch (e: Exception) {
-            Result.failure(mapToGatewayException(e))
-        }
-    }
+    private fun noBackendConfigured(): GatewayException =
+        GatewayException.ServerError("No transaction backend is configured yet.")
 
     private fun mapToGatewayException(e: Exception): GatewayException {
         return when (e) {

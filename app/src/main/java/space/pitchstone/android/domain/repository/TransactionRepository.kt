@@ -8,5 +8,4 @@ interface TransactionRepository {
     suspend fun getTransactionById(id: String): Result<Transaction>
     suspend fun saveTransaction(rawJson: Map<String, Any?>): Result<Transaction>
     suspend fun extractTransaction(text: String?, attachments: List<Attachment>): Result<String>
-    suspend fun pingGateway(): Result<Boolean>
 }
